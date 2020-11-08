@@ -1,1 +1,1 @@
-# predicting_latam_corruption
+# predicting-latam-corruption
