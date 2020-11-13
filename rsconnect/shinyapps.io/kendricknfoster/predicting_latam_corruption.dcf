@@ -1,0 +1,12 @@
+name: predicting_latam_corruption
+title: predicting_latam_corruption
+username:
+account: kendricknfoster
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3220088
+bundleId: 3853418
+url: https://kendricknfoster.shinyapps.io/predicting_latam_corruption/
+when: 1605207747.28844
+asMultiple: FALSE
+asStatic: FALSE

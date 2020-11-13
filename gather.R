@@ -172,35 +172,6 @@ poverty <- inner_join(poverty_data, poverty_meta, by = "country_code") %>%
   mutate(year = str_sub(year, 2, 5)) %>%
   mutate(year = as.numeric(year))
 
-# I read in economic freedom data from the Heritage Foundation. I don't
-# particularly care about the ranks, so I filter them out; likewise, I select
-# the indicator code that corresponds with the raw score according to the
-# Heritage Foundation's methodology.
-
-economic_freedom <- read_csv("raw_data/Economic Freedom.csv",
-                             col_names = c("country_code", "country", "id", "indicator", 
-                                           "subindicator", "2013", "2014", "2015", "2016", 
-                                           "2017", "2018"),
-                             cols(country_code = col_character(),
-                                  country = col_character(),
-                                  id = col_double(),
-                                  indicator = col_character(),
-                                  subindicator = col_character(),
-                                  `2013` = col_double(),
-                                  `2014` = col_double(),
-                                  `2015` = col_double(),
-                                  `2016` = col_double(),
-                                  `2017` = col_double(),
-                                  `2018` = col_double()),
-                             skip = 1) %>%
-  filter(id == 747,
-         subindicator == "Value") %>%
-  select(country, "2013":"2018") %>%
-  pivot_longer(cols = "2013":"2018",
-               names_to = "year", 
-               values_to = "Economic Freedom") %>%
-  mutate(year = as.numeric(year))
-
 # I loaded in the vdem dataset with the vdem package, so I can now directly
 # select the indicators I'm curious about with the extract_vdem function. I
 # include the OSP so I can get the dataset using the original scale, not the
@@ -257,7 +228,6 @@ wb_data <- inner_join(gdp_pc, gini, by = c("country", "year")) %>%
 # with the CPI dataset.
 
 final_data <- left_join(cpi_data, wb_data, by = c("country", "year")) %>%
-  left_join(., economic_freedom, by = c("country", "year")) %>%
   left_join(., bureaucratic_remuneration, by = c("country", "year")) %>%
   left_join(., public_finance, by = c("country", "year")) %>%
   left_join(., infrastructure_spending, by = c("country", "year"))

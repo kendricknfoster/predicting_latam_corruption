@@ -29,9 +29,7 @@ ui <- shinyUI(
                 selectInput("x", 
                             "Select explanatory variable",
                             choices = names(final_data)),
-                selectInput("y", "Select dependent variable",
-                            choices = names(final_data)),
-                selectInput("geom", "geom", c("point", "smooth")), 
+                selectInput("geom", "geom", c("point", "linear", "quadratic")), 
                 plotOutput("plot"))),
         
         tabPanel("The Model"),
@@ -40,11 +38,15 @@ ui <- shinyUI(
                  titlePanel("About"),
                  h3("The Data"),
                  p(tags$ol(
-                     tags$li(
-                         "GDP per capita, inequality, government spending, 
-                         and poverty all came from the", a("The World Bank", href = "https://data.worldbank.org"), 
-                         "dataset. The inequality data is a lot spottier than the other three indicators."
-                     )
+                     tags$li("CPI data"),
+                     tags$li("GDP per capita, inequality, government spending, 
+                              and poverty all came from the", a("The World Bank", href = "https://data.worldbank.org"), 
+                             "dataset. The inequality data is a lot spottier than the other three indicators."),
+                     tags$li("Bureaucratic remuneration and public campaign finance 
+                              come from the vdem dataset, accessed through the vdem 
+                              package."),
+                     tags$li("Economic freedom"),
+                     tags$li("Spending on infrastructure")
                  )
                    ))
         
@@ -66,12 +68,13 @@ server <- function(input, output) {
     plot_geom <- reactive({
         switch(input$geom,
                point = geom_point(),
-               smooth = geom_smooth(method = lm)
+               linear = geom_smooth(method = lm, formula = y ~ x),
+               quadratic = geom_smooth(method = lm, formula = y ~ poly(x, 2))
         )
     })
     
     output$plot <- renderPlot({
-        ggplot(final_data, aes(.data[[input$x]], .data[[input$y]])) +
+        ggplot(final_data, aes(.data[[input$x]], CPI)) +
             plot_geom()})
 }
 
