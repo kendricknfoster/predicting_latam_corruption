@@ -7,6 +7,9 @@ library(tidyverse)
 
 CPI_shapefile <- readRDS("CPI_shapefile.RDS")
 final_data <- readRDS("final_data.RDS")
+rf <- readRDS("rf.RDS")
+final_test <- readRDS("final_test.RDS") %>%
+    select(-CPI, -country, -year, -log_gdp)
 
 # Define UI for application that draws a histogram
 
@@ -21,8 +24,7 @@ ui <- shinyUI(
                      fluidRow(column(6,
                                      plotOutput("cpi_shapefile")),
                               column(6, 
-                                     p("Latin America is generally regarded as one of the most corrupt regions 
-                   in the world. However, there is a lot of variation within the region: 
+                                     p("Latin America is generally regarded as one of the most corrupt regions in the world. However, there is a lot of variation within the region: 
                    Uruguay, Chile, and Costa Rica, for instance, are regarded as some of the 
                    least corrupt countries in the world. Why is there so much variation
                    within the region?"),
@@ -58,7 +60,8 @@ ui <- shinyUI(
                                         "Government Spending" = "govt_spending",
                                         "Poverty Rate" = "poverty_rate",
                                         "Bureaucratic Remuneration" = "bur_rem",
-                                        "Public Campaign Finance" = "pcf")),
+                                        "Public Campaign Finance" = "pcf",
+                                        "Infrastructure Spending" = "infra_spend")),
                 selectInput("geom", 
                             "Select plot type", 
                             c("Scatterplot" = "point", 
@@ -66,7 +69,22 @@ ui <- shinyUI(
                               "Quadratic Regression" = "quadratic")), 
                 plotOutput("plot"))),
         
-        tabPanel("The Model"),
+        tabPanel("The Model",
+                 fluidPage(
+                     fluidRow(
+                         column(6, 
+                                numericInput( 'gdp_pc', 'GDP Per Capita', 4707.79),
+                                numericInput( 'gini', 'Gini Coefficient', 49.20),
+                                numericInput( 'govt_spending', 'Government Spending', 21.46),
+                                numericInput( 'infra_spend', 'Infrastructure Spending', 1.92)),
+                         column(6, 
+                                sliderInput( 'bur_rem', 'Bureaucratic Remuneration', min = 0, max = 4, value = 3.75, step = 0.25),
+                                sliderInput( 'pcf', 'Public Campaign Finance', min = 0, max = 4, value = 2.75, step = 0.25),
+                                numericInput( 'poverty_rate', 'Poverty Rate', 4.6))),
+                     fluidRow(h3("Calculate Predicted CPI"), 
+                              column(2, actionButton('cal','Calculate', icon = icon('calculator'))),
+                              column(2, verbatimTextOutput("value", placeholder = TRUE))))), 
+                 
         
         tabPanel("About",
                  titlePanel("About"),
@@ -90,7 +108,6 @@ ui <- shinyUI(
                    a("kfoster@college.harvard.edu", href = "mailto:kfoster@college.harvard.edu"),"."
                  ))))
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
 
     output$cpi_shapefile <- renderPlot({
@@ -117,6 +134,33 @@ server <- function(input, output) {
             ggplot(aes(.data[[input$x]], CPI)) +
             plot_geom()
         })
+    
+    a <- reactiveValues(result = NULL)
+    
+    observeEvent(input$cal, {
+        
+        #Dataframe for the single prediction
+        values = data.frame(gdp_pc = input$gdp_pc, 
+                            gini = input$gini,
+                            govt_spending = input$govt_spending, 
+                            poverty_rate = input$poverty_rate,
+                            bur_rem = as.integer(input$bur_rem),
+                            pcf = as.integer(input$pcf), 
+                            infra_spend = input$infra_spend)
+        
+        #Include the values into the new data
+        final_test <- rbind(final_test, values)
+        
+        #Single preiction using the randomforest model
+        a$result <-  round(predict(rf, 
+                                   newdata = final_test[nrow(final_test),]), 
+                           digits = 3)
+    })
+    
+    output$value <- renderText({
+        #Display the prediction value
+        paste(a$result)
+    })
 }
 
 shinyApp(ui = ui, server = server)
