@@ -25,7 +25,7 @@ error <- function(model){
 }
 
 stan_model_1 <- stan_glm(CPI ~ gdp_pc + gini + govt_spending + poverty_rate + bur_rem +
-                           pcf + infra_spend, 
+                           pcf + infra_spend + prop_rights - 1, 
                          data = final_train, 
          refresh = 0)
 
@@ -34,14 +34,20 @@ stan_1_error <- error(stan_model_1) %>%
 
 stan_model_2 <- stan_glm(data = final_train,
                          CPI ~ gdp_pc + gini*poverty_rate + govt_spending * infra_spend +
-                           bur_rem + pcf, 
+                           bur_rem + pcf + prop_rights - 1, 
                          refresh = 0)
+
+tbl_regression(stan_model_2) %>%
+  as_gt()
+
+print(stan_model_2, digits = 3)
+
 
 stan_2_error <- error(stan_model_2) %>%
   mutate(model = "Multivariate Linear Model with Interaction Terms")
 
 stan_model_3 <- stan_glm(CPI ~ log_gdp + gini + govt_spending + poverty_rate + bur_rem +
-                           pcf + infra_spend, 
+                           pcf + infra_spend + prop_rights - 1, 
                          data = final_train, 
                          refresh = 0)
 
@@ -49,18 +55,14 @@ stan_3_error <- error(stan_model_3) %>%
   mutate(model = "Multivariate Linear Model with Log of GDP")
 
 simple_stan <- stan_glm(data = final_train, 
-                        CPI ~ gdp_pc + bur_rem + poverty_rate,
+                        CPI ~ gdp_pc + bur_rem + poverty_rate - 1,
                         refresh = 0)
 
 stan_4_error <- error(simple_stan) %>%
   mutate(model = "Multivariate Linear Model with 3 Variables")
 
-stan_model_5 <- stan_glm(CPI ~ gdp_pc )
-
-stan_5_error <- 
-
 tree <- rpart(CPI ~ gdp_pc + gini + govt_spending + poverty_rate + bur_rem +
-                pcf + infra_spend,
+                pcf + infra_spend + prop_rights,
               data = final_train,
               cp = 0.1)
 
@@ -71,11 +73,11 @@ rpart.plot(tree,
            type = 1)
 
 rf <- randomForest(CPI ~ gdp_pc + gini + govt_spending + poverty_rate + bur_rem +
-                     pcf + infra_spend, 
+                     pcf + infra_spend + prop_rights, 
                    data = final_train)
 
 rf_log <- randomForest(CPI ~ log_gdp + gini + govt_spending + poverty_rate + bur_rem +
-                     pcf + infra_spend, 
+                     pcf + infra_spend + prop_rights, 
                    data = final_train)
 
 rf_error <- error(rf) %>%
@@ -97,7 +99,7 @@ normalized_test <- final_test %>%
   normalize(.) 
 
 nn <- neuralnet(CPI ~ gdp_pc + gini + govt_spending + poverty_rate + bur_rem +
-                  pcf + infra_spend,
+                  pcf + infra_spend + prop_rights,
           data = normalized_train,
           hidden = c(5, 2),
           linear.output = TRUE)
@@ -125,5 +127,5 @@ bind_rows(stan_1_error, stan_2_error, stan_3_error, stan_4_error,
   fmt_markdown(columns = TRUE) 
 
 saveRDS(final_test, file = "final_test.RDS")
-saveRDS(rf, file = "rf.RDS")
+saveRDS(stan_model_2, file = "model.RDS")
   

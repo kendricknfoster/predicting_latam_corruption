@@ -99,12 +99,15 @@ CPI2013 <- CPI2013 %>%
   select(country, CPI, year) %>%
   mutate(CPI = as.numeric(CPI))
 
+# This particular spreadsheet kept producing an error when I ran the function,
+# so I just copied out the original source doe and it worked fine.
+
 CPI2012 <- read_excel("raw_data/2012 CPI.xlsx") %>%
   clean_names() %>%
   filter(!(country == "United States" | country == "Canada" | country == "Bahamas" | 
-             country == "Barbados" | country == "Dominica" | country == "Grenada" | country == "Saint Lucia" | 
-             country == "Saint Vincent and the Grenadines" | country == "Trinidad and Tobago" | 
-             country == "Puerto Rico")) %>%
+             country == "Barbados" | country == "Dominica" | country == "Grenada" | 
+             country == "Saint Lucia" | country == "Saint Vincent and the Grenadines" | 
+             country == "Trinidad and Tobago" | country == "Puerto Rico")) %>%
   mutate(year = 2012) %>%
   rename(CPI = cpi_2012_score) %>%
   select(country, CPI, year)
@@ -132,6 +135,9 @@ cpi_setup_csv <- cpi_setup <- function(dataset, year, skip = 0){
     mutate(score = score * 10) %>%
     clean_names()
 }
+
+# I input the data from the CSVs from 2001 to 2011 using the second function
+# that I elaborated.
 
 CPI2011 <- cpi_setup_csv("raw_data/2011 CPI.csv",
                      year = 2011) %>%
@@ -293,6 +299,15 @@ public_finance <- extract_vdem(name_pattern = "v2elpubfin",
   rename(pcf = v2elpubfin_osp) %>%
   filter(year >= 2001)
 
+# I now extract Property Rights. 
+
+property_rights <- extract_vdem(name_pattern = "v2xcl_prpty") %>%
+  select(vdem_country_name, year, v2xcl_prpty) %>%
+  drop_na() %>%
+  rename(country = vdem_country_name) %>%
+  rename(prop_rights = v2xcl_prpty) %>%
+  filter(year >= 2001)
+
 # I read in INFRALATAM data on Infrastructure Spending as a % of GDP. The data
 # is originally in Spanish, so I set the column names here and skip the original
 # column names. I also fix the original dataset natively in Excel to change
@@ -328,13 +343,15 @@ wb_data <- inner_join(gdp_pc, gini, by = c("country", "year")) %>%
 final_data <- left_join(cpi_data, wb_data, by = c("country", "year")) %>%
   left_join(., bureaucratic_remuneration, by = c("country", "year")) %>%
   left_join(., public_finance, by = c("country", "year")) %>%
+  left_join(., property_rights, by = c("country", "year")) %>%
   left_join(., infrastructure_spending, by = c("country", "year"))
 
+# I mutate a column with the log of GDP per capita in order to test it in
+# regressions later on.
 
 final_data <- final_data %>%
   mutate(log_gdp = log10(gdp_pc))
   
-
 # I save the final data as a RDS to transfer it over to the Shiny App. 
 
 saveRDS(final_data, file = "final_data.RDS")
