@@ -7,7 +7,7 @@ library(sf)
 
 # Read in the different RDSs that I set up in the other files. 
 
-CPI_shapefile <- readRDS("CPI_shapefile.RDS")
+CPI_shapefile <- readRDS("www/CPI_shapefile.RDS")
 final_data <- readRDS("final_data.RDS")
 model <- readRDS("model.RDS")
 

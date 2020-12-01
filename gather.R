@@ -369,6 +369,4 @@ CPI_shapefile <- left_join(final_data, map, by = "country") %>%
   filter(year == 2019) %>%
   st_as_sf()
 
-st_crs(CPI_shapefile) <- 4326
-
 saveRDS(CPI_shapefile, file = "CPI_shapefile.RDS")
