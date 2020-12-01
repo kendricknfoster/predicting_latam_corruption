@@ -344,7 +344,9 @@ final_data <- left_join(cpi_data, wb_data, by = c("country", "year")) %>%
   left_join(., bureaucratic_remuneration, by = c("country", "year")) %>%
   left_join(., public_finance, by = c("country", "year")) %>%
   left_join(., property_rights, by = c("country", "year")) %>%
-  left_join(., infrastructure_spending, by = c("country", "year"))
+  left_join(., infrastructure_spending, by = c("country", "year")) %>%
+  filter(!(country == "Trinidad & Tobago" | country == "Cote d'Ivoire" | 
+           country == "Jamaica"))
 
 # I mutate a column with the log of GDP per capita in order to test it in
 # regressions later on.

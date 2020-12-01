@@ -5,9 +5,15 @@ library(shiny)
 library(shinythemes)
 library(tidyverse)
 
+# Read in the different RDSs that I set up in the other files. 
+
 CPI_shapefile <- readRDS("CPI_shapefile.RDS")
 final_data <- readRDS("final_data.RDS")
 model <- readRDS("model.RDS")
+
+# I select the qualitative variables and the Log of GDP out of the dataset so
+# that I don't end up with a lot of errors later on.
+
 final_test <- readRDS("final_test.RDS") %>%
     select(-CPI, -country, -year, -log_gdp)
 
@@ -15,6 +21,8 @@ ui <- shinyUI(
     navbarPage(
         theme = shinytheme("cosmo"),
         "Predicting Corruption in Latin America",
+        
+        ### FIRST PAGE ###
         
         tabPanel("The Question",
                  titlePanel("How can we predict corruption in Latin America?"),
@@ -26,16 +34,20 @@ ui <- shinyUI(
                    Uruguay, Chile, and Costa Rica, for instance, are regarded as some of the 
                    least corrupt countries in the world. Why is there so much variation
                    within the region?"),
-                                     p("Political science has posited several major explanations for corruption: ",
+                                     p("Political science has posited several major variables that are highly correlated with corruption: ",
                                        tags$ul(
                                            tags$li("GDP Per Capita: Richer countries
                                                    have lower levels of corruption due to more
                                                    developed political and economic institutions (Serra 2006)."),
                                            tags$li("Poverty Rate: Poor individuals need access to government services, 
-                                                   so a higher level of poverty means more citizens who might be willing
+                                                   so a higher level of poverty means more citizens might be willing
                                                    to pay bribes to access government services (Juresten and Bjornskov 2014)."),
-                                           tags$li("Inequality"))),
-                                     p("I also hope to test several less common explanations for corruption using datasets beyond traditional World Bank datasets: ",
+                                           tags$li("Inequality: Relatedly, with higher inequality, the rich have more to lose from fair economic
+                                                   systems, so they are more likely to engage in corrupt behavior to maintain their
+                                                   current positions. As a result, we would expect higher inequality to lead to 
+                                                   higher levels of corruption (You and Khagram 2005)."))),
+                                     p("I also hope to test several less common explanations for corruption using datasets beyond 
+                                       traditional economic factors:",
                                        tags$ul(
                                            tags$li("Bureaucratic Remuneration: 
                                                    If bureaucrats get paid more, they have less incentive for petty corruption. 
@@ -55,6 +67,8 @@ ui <- shinyUI(
                      )
                  )), 
         
+        ### SECOND PAGE ###
+        
         tabPanel("The Data",
             fluidPage(
                 p("In this panel, look over the various indicators to see how strongly they are
@@ -64,24 +78,32 @@ ui <- shinyUI(
                   CPI so that 0 represents the theoretical least corrupt country and 100 
                   represents the theoretical most corrupt country.",
                   tags$ul(
-                      tags$li("GDP per capita is measured in 2011 US dollars."),
-                      tags$li("The Gini coefficient measures inequality, with 0 representing
+                      tags$li(
+                          tags$b("GDP per capita"), "is measured in 2011 US dollars."),
+                      tags$li("The", tags$b("Gini coefficient"), "measures inequality, with 0 representing
                               a perfectly unequal country and 1 representing a perfectly equal country."),
-                      tags$li("For this project, the poverty rate is defined as the proportion of people
+                      tags$li("For this project, the", tags$b("poverty rate"), "is defined as the proportion of people
                               living on less than $1.90 per day."),
-                      tags$li("Government spending and infrastructure spending are both measured as
+                      tags$li(
+                          tags$b("Government spending"), "and", tags$b("infrastructure spending"), "are both measured as
                               percentage of GDP."),
-                      tags$li("Property rights is measured on a scale of 0 to 1, where 0 is a country
+                      tags$li(
+                          tags$b("Property rights"), "are measured on a scale of 0 to 1, where 0 is a country
                               with absolutely no property right protections and 1 is a country with
                               absolute property right protections."),
-                      tags$li("Bureaucratic remuneration is measured on a scale of 0 to 4, where 0 is a
+                      tags$li(
+                          tags$b("Bureaucratic remuneration"), "is measured on a scale of 0 to 4, where 0 is a
                               country where no bureaucrats are salaried and state-employed and 
                               4 is a country where all or almost all bureaucrats are salaried and
                               state-employed."),
-                      tags$li("Public campaign finance is measured on a scale of 0 to 4, where 0 is a country
+                      tags$li(
+                          tags$b("Public campaign finance"), "is measured on a scale of 0 to 4, where 0 is a country
                               that has no public campaign financing and 4 is a country where public campaign
                               finance contributes significantly to all or nearly all political parties.")
-                  )),
+                      )),
+                
+                # Define the choices for the interactive plot. 
+                
                 selectInput("x", 
                             "Select explanatory variable",
                             choices = c("GDP per Capita" = "gdp_pc",
@@ -92,12 +114,17 @@ ui <- shinyUI(
                                         "Property Rights" = "prop_rights",
                                         "Bureaucratic Remuneration" = "bur_rem",
                                         "Public Campaign Finance" = "pcf")), 
+                
+                # Define the choices for the different plot types. 
+                
                 selectInput("geom", 
                             "Select plot type", 
                             c("Scatterplot" = "point", 
                               "Linear Regression" = "linear", 
                               "Quadratic Regression" = "quadratic")), 
-                plotOutput("plot"))),
+                
+                plotOutput("aggregate"))),
+        
         
         tabPanel("The Model",
                  fluidPage(
@@ -151,7 +178,9 @@ server <- function(input, output) {
             geom_sf(aes(fill = CPI)) +
             scale_fill_distiller(palette = "Reds") +
             theme(legend.position = "left") +
-            theme_void()
+            theme_void() +
+            labs(title = "Inverted Corruption Perceptions Index in Latin America, 2019",
+                 subtitle = "Higher score means more corruption.")
         })
     
     plot_geom <- reactive({
@@ -162,11 +191,39 @@ server <- function(input, output) {
         )
     })
     
-    output$plot <- renderPlot({
-        final_data %>%
+    output$aggregate <- renderPlot({
+        plot <- final_data %>%
             drop_na(.data[[input$x]]) %>%
             ggplot(aes(.data[[input$x]], CPI)) +
-            plot_geom()
+            plot_geom() + 
+            ylab("Inverse CPI")
+        
+        if (input$x == "gdp_pc")
+            plot <- plot + xlab("GDP Per Capita ($)")
+        
+        if(input$x == "gini")
+            plot <- plot + xlab("Gini Coefficient")
+        
+        if(input$x == "poverty_rate")
+            plot <- plot + xlab("Poverty Rate")
+        
+        if(input$x == "govt_spending")
+            plot <- plot + xlab("Government Spending (% of GDP)")
+        
+        if(input$x == "infra_spend")
+            plot <- plot + xlab("Infrastructure Spending (% of GDP)")
+        
+        if(input$x == "prop_rights")
+            plot <- plot + xlab("Property Rights (0 to 1)")
+        
+        if(input$x == "bur_rem")
+            plot <- plot + xlab("Bureaucratic Remuneration (0 to 4)")
+        
+        if(input$x == "pcf")
+            plot <- plot + xlab("Public Campaign Finance (0 to 4)")
+
+        plot
+
         })
     
     a <- reactiveValues(result = NULL)
@@ -190,7 +247,7 @@ server <- function(input, output) {
     })
     
     output$value <- renderText({
-        #Display the prediction value
+        
         paste(a$result)
     })
 }
