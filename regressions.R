@@ -42,19 +42,26 @@ stan_model_1 <- stan_glm(CPI ~ gdp_pc + gini + govt_spending + poverty_rate +
 stan_1_error <- error(stan_model_1) %>%
   mutate(model = "Multivariate Linear Model")
 
-# Define a stan_glm with interaction terms between Gini & Poverty Rate and
-# Government Spending & Infrastructure Spending.
+# Define a glm with interaction terms between Gini & Poverty Rate and Government
+# Spending & Infrastructure Spending. The stan_glm wouldn't work with the
+# regression table, so I switch to a glm.
 
-stan_model_2 <- stan_glm(data = final_train,
-                         CPI ~ gdp_pc + gini*poverty_rate + govt_spending * infra_spend +
-                           bur_rem + pcf + prop_rights - 1, 
-                         refresh = 0)
+stan_model_2 <- glm(data = final_train,
+                         CPI ~ gdp_pc + gini + poverty_rate + govt_spending * infra_spend +
+                           bur_rem + pcf + prop_rights - 1)
 
-tbl_regression(stan_model_2) %>%
+tbl_regression(stan_model_2,
+               estimate_fun = ~style_number(.x, digits = 4)) %>%
   as_gt()
 
 stan_2_error <- error(stan_model_2) %>%
   mutate(model = "Multivariate Linear Model with Interaction Terms")
+
+stan_test <- stan_glm(data = final_train, 
+                      CPI ~ infra_spend,
+                      refresh = 0)
+
+error(stan_test)
 
 # Define a simple stan_glm but using the logarithm of GDP per capita. 
 

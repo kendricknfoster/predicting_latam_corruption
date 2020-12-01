@@ -208,8 +208,7 @@ CPI2001 <- cpi_setup_csv("raw_data/2001 CPI.csv",
 cpi_data <- bind_rows(CPI2001, CPI2002, CPI2003, CPI2004, CPI2005,
                       CPI2006, CPI2007, CPI2008, CPI2009, CPI2010, 
                       CPI2011, CPI2012, CPI2013, CPI2014, CPI2015, 
-                      CPI2016, CPI2017, CPI2018, CPI2019) %>%
-  mutate(CPI = 100 - CPI)
+                      CPI2016, CPI2017, CPI2018, CPI2019)
 
 # I create a function here to clean up the World Bank data to only include Latin
 # America and the Caribbean (since that's what I'm interested in) and pivot to
@@ -369,5 +368,7 @@ map <- st_read("raw_data/Shapefile") %>%
 CPI_shapefile <- left_join(final_data, map, by = "country") %>%
   filter(year == 2019) %>%
   st_as_sf()
+
+st_crs(CPI_shapefile) <- 4326
 
 saveRDS(CPI_shapefile, file = "CPI_shapefile.RDS")

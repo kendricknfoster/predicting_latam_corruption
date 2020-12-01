@@ -5,8 +5,9 @@ account: kendricknfoster
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3220088
-bundleId: 3923884
+bundleId: 3928633
 url: https://kendricknfoster.shinyapps.io/predicting_latam_corruption/
-when: 1606758968.6958
+when: 1606845244.13957
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: test_app/app.R
