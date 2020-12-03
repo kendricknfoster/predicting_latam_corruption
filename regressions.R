@@ -57,12 +57,6 @@ tbl_regression(stan_model_2,
 stan_2_error <- error(stan_model_2) %>%
   mutate(model = "Multivariate Linear Model with Interaction Terms")
 
-stan_test <- stan_glm(data = final_train, 
-                      CPI ~ infra_spend,
-                      refresh = 0)
-
-error(stan_test)
-
 # Define a simple stan_glm but using the logarithm of GDP per capita. 
 
 stan_model_3 <- stan_glm(CPI ~ log_gdp + gini + govt_spending + poverty_rate + bur_rem +

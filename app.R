@@ -4,6 +4,8 @@ library(shiny)
 library(shinythemes)
 library(tidyverse)
 library(sf)
+library(gt)
+library(gtsummary)
 
 # Read in the different RDSs that I set up in the other files. 
 
@@ -45,7 +47,10 @@ ui <- shinyUI(
                                            tags$li("Inequality: Relatedly, with higher inequality, the rich have more to lose from fair economic
                                                    systems, so they are more likely to engage in corrupt behavior to maintain their
                                                    current positions. As a result, we would expect higher inequality to lead to 
-                                                   higher levels of corruption (You and Khagram 2005)."))),
+                                                   higher levels of corruption (You and Khagram 2005)."),
+                                           tags$li("Property Rights: Poor state enforcement of contracts and property rights prompt
+                                                   individuals in the private sector to engage in corrupt behavior to preserve their
+                                                   property rights (Dimant and Tosato 2018: 341)."))),
                                      p("I also hope to test several less common explanations for corruption using datasets beyond 
                                        traditional economic factors:",
                                        tags$ul(
@@ -122,15 +127,23 @@ ui <- shinyUI(
                                    "Linear Regression" = "linear", 
                                    "Quadratic Regression" = "quadratic")), 
                      
+                     # Output the plot from the server. 
+                     
                      plotOutput("aggregate"))),
         
+        # I initially had some problems getting the regression table to output,
+        # but I realized I needed to use the gt_output function (and load the gt
+        # package in Shiny as well).
         
         navbarMenu("The Model", 
+                   
+                   ### THIRD PAGE ###
+                   
                    tabPanel("Interpreting the Model",
                             titlePanel("Interpreting the Model"),
                             fluidRow(
                                 column(6,
-                                       tableOutput("regression_table")),
+                                       gt_output("regression_table")),
                                 column(6,
                                        p("I end up using a multivariate linear model with an interaction between
                                          between government spending and infrastructure spending (since a country 
@@ -149,9 +162,26 @@ ui <- shinyUI(
                                        p("Interpret the interaction term here"),
                                        p("One surprising thing about this regression was the impact of Public Campaign Finance:
                                          We would expect that more public campaign finance increases a country's CPI score, but
-                                         the model shows that it in fact decreases a country's predicted CPI. (reasons why)"),
-                                       p("Implications"),
-                                       p("Limitations"))))),
+                                         the model shows that it in fact decreases a country's predicted CPI. This could have to do
+                                         with the way that the Public Campaign Finance data is set with discrete values; more research
+                                         on potential explanations for this is needed."),
+                                       p("There are several limitations to this model. First, I did not add a quadratic term
+                                         into the model for the poverty variable; this could improve the model's reliability.
+                                         Secondly, since all the data comes from a time series, it could suffer from autocorrelation,
+                                         and I did not control for this possibility. Third, this model only has 92 observations 
+                                         since there was so much missing data, so it could be wildly incorrect."), 
+                                       p("Given the number of statistically significant variables in the analysis, reducing corruption
+                                         by acting on only one variable would likely not do much to reduce corruption. Addition, there
+                                         is a significant chicken-and-egg problem in reducing corruption. For example, countries may try 
+                                         to improve economic development to reduce corruption, but corruption itself drives foreign investors 
+                                         away and reduces economic development as well. As a result, governments should probably start on
+                                         factors that are more within their control, like bureaucratic remuneration or enforcement of
+                                         property rights."))))),
+                   
+                   ### FOURTH PAGE ###
+                   
+                   # I set numeric inputs for the continuous variables and
+                   # slider inputs for the variables with discrete scales.
                    
                    tabPanel("Make Your Own Predictions", 
                             titlePanel("Make Your Own Predictions"),
@@ -170,10 +200,19 @@ ui <- shinyUI(
                                                         min = 0, max = 4, value = 2.75, step = 0.25),
                                            numericInput( 'govt_spending', 'Government Spending', 21.46),
                                            numericInput( 'infra_spend', 'Infrastructure Spending', 1.92))),
+                                
+                                # I now create a "calculate" button and give it
+                                # an object to that the server below will
+                                # recognize it. I then set the text output of
+                                # the reactive value to the output of the new
+                                # prediction.
+                                
                                 fluidRow(h3("Calculate Predicted CPI"), 
                                          column(2, actionButton('cal','Calculate', icon = icon('calculator'))),
                                          column(2, verbatimTextOutput("value", placeholder = TRUE)))))), 
         
+        
+        ### FIFTH PAGE ###
         
         tabPanel("About",
                  titlePanel("About"),
@@ -194,13 +233,18 @@ ui <- shinyUI(
                               come from the", a("vdem", href = "https://www.v-dem.net/en/"), 
                              "dataset, accessed through the vdem package."),
                      tags$li("Infrastructure spending comes from the", a("Infralatam", href = "http://home.infralatam.info/"), 
-                             "dataset."))),
+                             "dataset."),
+                     tags$li("Shapefile data comes from", a("replication data", 
+                                                            href = "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/OSNGFE"),
+                             "for Calil et al. (2017)."))),
                  h3("About Me"),
                  p("I am a junior at Harvard College studying History and Government, with a focus on public policy and diplomacy in Latin America. You can reach me at", 
                    a("kfoster@college.harvard.edu", href = "mailto:kfoster@college.harvard.edu"),"."
                  ))))
 
 server <- function(input, output) {
+    
+    # Define server output to switch the plot type in the main data tab. 
     
     plot_geom <- reactive({
         switch(input$geom,
@@ -210,12 +254,17 @@ server <- function(input, output) {
         )
     })
     
+    # Define server output to input the final data and create the plot defined
+    # in the above server step.
+    
     output$aggregate <- renderPlot({
         plot <- final_data %>%
             drop_na(.data[[input$x]]) %>%
             ggplot(aes(.data[[input$x]], CPI)) +
             plot_geom() + 
             ylab("CPI")
+        
+        # Define labels for the reactive plot. 
         
         if (input$x == "gdp_pc")
             plot <- plot + xlab("GDP Per Capita ($)")
@@ -245,9 +294,13 @@ server <- function(input, output) {
         
     })
     
+    # Set server logic required to set up the prediction tab. 
+    
     a <- reactiveValues(result = NULL)
     
     observeEvent(input$cal, {
+        
+        # Set the values equal to the user-selected input. 
         
         values = data.frame(gdp_pc = input$gdp_pc, 
                             gini = input$gini,
@@ -258,19 +311,35 @@ server <- function(input, output) {
                             infra_spend = input$infra_spend,
                             prop_rights = input$prop_rights)
         
+        # Bind the new values to the test dataset. 
+        
         final_test <- rbind(final_test, values)
+        
+        # Predict the new CPI based on the results that the user inputs. 
         
         a$result <-  round(predict(model, 
                                    newdata = final_test[nrow(final_test),]), 
                            digits = 3)
     })
     
+    # Put the result in an output slot. 
+    
     output$value <- renderText({
         
         paste(a$result)
     })
     
+    # Define the shapefile plot on the first page. 
+    
     output$cpi_shapefile <- renderPlot({
+        
+        # Since I was having the hardest time fixing an error with the
+        # shapefile, I found this hack online to set the operating version of
+        # Shapefile to the operating version that Ubuntu has (since apparently R
+        # has a more updated version than Ubuntu).
+        
+        st_crs(CPI_shapefile) <- 4326
+        
         CPI_shapefile %>%
             select(country, CPI, geometry) %>%
             ggplot(aes(geometry = geometry)) +
@@ -280,9 +349,16 @@ server <- function(input, output) {
             theme_void() +
             labs(title = "Corruption Perceptions Index in Latin America, 2019",
                  subtitle = "Higher score means less corruption.")
+        
     })
     
+    # Output the regression table on the model tab. As discussed above, I
+    # realized that I would have to use the render_gt function in order to get
+    # the app to work.
+    
     output$regression_table <- render_gt({
+        
+        # I look online to see how to add more digits into the table. 
         
         tbl_regression(model,
                        estimate_fun = ~style_number(.x, digits = 4)) %>%
@@ -290,5 +366,7 @@ server <- function(input, output) {
         
             })
 }
+
+# Run the Shiny App. 
 
 shinyApp(ui = ui, server = server)
