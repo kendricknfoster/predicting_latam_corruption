@@ -159,7 +159,8 @@ ui <- shinyUI(
                                          On the other hand, every 1 point increase in a country's Gini coefficient decreases the
                                          predicted CPI by 0.547 points and every 1 point increase in a country's poverty rate
                                          decreases the predicted CPI by 0.670 points."),
-                                       p("Interpret the interaction term here"),
+                                       p("Our interaction term is statistically significant, which means that there is indeed an
+                                         interplay between government spending and infrastructure spending."),
                                        p("One surprising thing about this regression was the impact of Public Campaign Finance:
                                          We would expect that more public campaign finance increases a country's CPI score, but
                                          the model shows that it in fact decreases a country's predicted CPI. This could have to do
