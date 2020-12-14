@@ -19,6 +19,12 @@ model <- readRDS("model.RDS")
 final_test <- readRDS("final_test.RDS") %>%
     select(-CPI, -country, -year, -log_gdp)
 
+# As a broad note, I didn't religiously check the lines of code with paragraphs
+# in them to make sure they were less than 80 characters, since those lines
+# aren't essential to understanding how the code works and it's a pain in the
+# butt to check each line of paragraph code and then check it again every time I
+# reword the paragraph slightly.
+
 ui <- shinyUI(
     navbarPage(
         theme = shinytheme("cosmo"),
@@ -29,10 +35,16 @@ ui <- shinyUI(
         tabPanel("The Question",
                  titlePanel("How can we predict corruption in Latin America?"),
                  fluidPage(
-                     fluidRow(column(6,
+                     
+                     # I attempt to make the map bigger here, but I couldn't
+                     # find a way to do that without making it non-fluid or
+                     # without making it WAY too big.
+                     
+                     fluidRow(column(6, 
                                      plotOutput("cpi_shapefile")),
                               column(6, 
-                                     p("Latin America is generally regarded as one of the most corrupt regions in the world. However, there is a lot of variation within the region: 
+                                     p("Latin America is generally regarded as one of the most corrupt regions in the world. 
+                                        However, there is a lot of variation within the region: 
                                         Uruguay, Chile, and Costa Rica, for instance, are regarded as some of the 
                                         least corrupt countries in the world. Why is there so much variation
                                         within the region?"),
@@ -148,29 +160,31 @@ ui <- shinyUI(
                                        p("I end up using a multivariate linear model with an interaction between
                                          between government spending and infrastructure spending (since a country 
                                          with high infrastructure spending likely also has high government spending).
-                                         This model had the lowest RMSE of all the models I ran."),
+                                         I choose this model because it has the lowest RMSE in the tests I ran."),
                                        p("Our most significant predictors are GDP per capita, property rights, and bureaucratic 
-                                          remuneration, which are negatively correlated with corruption, and the Gini coefficient and
-                                          poverty rate, which are positively correlated with corruption.",
+                                          remuneration, which are negatively correlated with corruption, and Gini coefficient
+                                          and poverty rate, which are positively correlated with corruption.",
                                        p("On average, every $1000 increase in GDP per capita increases the predicted CPI
-                                         by 1 point. On average, every 0.01 point increase in a country's property rights
-                                         index increases the predicted CPI by 0.337 points. On average, every 1 point increase
-                                         in a country's bureaucratic remuneration score increases the predicted CPI by 7.343 points. 
+                                         by 1.5 points. On average, every 0.01 point increase in a country's property rights
+                                         index increases the predicted CPI by 0.355 points. On average, every 1 point increase
+                                         in a country's bureaucratic remuneration score increases the predicted CPI by 8.618 points. 
                                          On the other hand, every 1 point increase in a country's Gini coefficient decreases the
-                                         predicted CPI by 0.547 points and every 1 point increase in a country's poverty rate
-                                         decreases the predicted CPI by 0.670 points."),
+                                         predicted CPI by 0.491 points and every 1 point increase in a country's poverty rate
+                                         decreases the predicted CPI by 0.600 points."),
                                        p("Our interaction term is statistically significant, which means that there is indeed an
                                          interplay between government spending and infrastructure spending."),
                                        p("One surprising thing about this regression was the impact of Public Campaign Finance:
                                          We would expect that more public campaign finance increases a country's CPI score, but
                                          the model shows that it in fact decreases a country's predicted CPI. This could have to do
-                                         with the way that the Public Campaign Finance data is set with discrete values; more research
-                                         on potential explanations for this is needed."),
+                                         with the way that the Public Campaign Finance data is set with discrete values; more 
+                                         research on potential explanations for this is needed."),
                                        p("There are several limitations to this model. First, I did not add a quadratic term
                                          into the model for the poverty variable; this could improve the model's reliability.
-                                         Secondly, since all the data comes from a time series, it could suffer from autocorrelation,
+                                         Second, since all the data comes from a time series, it could suffer from autocorrelation,
                                          and I did not control for this possibility. Third, this model only has 92 observations 
-                                         since there was so much missing data, so it could be wildly incorrect."), 
+                                         since there was so much missing data, so it could be wildly incorrect. Finally, 
+                                         As a side note, be careful when extrapolating results of this projects to different regions, 
+                                         as different regions have different distributions of variables."), 
                                        p("Given the number of statistically significant variables in the analysis, reducing corruption
                                          by acting on only one variable would likely not do much to reduce corruption. Addition, there
                                          is a significant chicken-and-egg problem in reducing corruption. For example, countries may try 
@@ -250,8 +264,10 @@ server <- function(input, output) {
     plot_geom <- reactive({
         switch(input$geom,
                point = geom_point(),
-               linear = geom_smooth(method = lm, formula = y ~ x),
-               quadratic = geom_smooth(method = lm, formula = y ~ poly(x, 2))
+               linear = geom_smooth(method = lm, 
+                                    formula = y ~ x),
+               quadratic = geom_smooth(method = lm, 
+                                       formula = y ~ poly(x, 2))
         )
     })
     

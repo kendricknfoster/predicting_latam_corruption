@@ -1,10 +1,9 @@
-# Load requisite libraries. 
+# Load relevant libraries.
 
 library(tidyverse)
 library(readxl)
 library(readr)
 library(sf)
-library(rstanarm)
 library(rvest)
 library(XML)
 library(RCurl)

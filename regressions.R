@@ -1,4 +1,4 @@
-# Load requisite libraries. 
+# Load relevant libraries.
 
 library(rpart)
 library(rpart.plot)
@@ -17,7 +17,6 @@ final_data <- final_data %>%
 
 # Divide the data into training and testing datasets. 
 
-set.seed(7)
 final_split <- initial_split(final_data, prop = 0.9)
 final_train <- training(final_split)
 final_test  <- testing(final_split)
@@ -32,12 +31,13 @@ error <- function(model){
     rmse(truth = CPI, estimate = value)
 }
 
-# Define a simple stan_glm with no interaction terms. 
+# Define a simple glm with no interaction terms. I do not use an intercept
+# because this makes no sense (there isn't a country out there with 0 GDP per
+# capita, 0 Gini, 0 bureaucratic remuneration, etc.)
 
-stan_model_1 <- stan_glm(CPI ~ gdp_pc + gini + govt_spending + poverty_rate + 
+stan_model_1 <- glm(CPI ~ gdp_pc + gini + govt_spending + poverty_rate + 
                            bur_rem + pcf + infra_spend + prop_rights - 1, 
-                         data = final_train, 
-         refresh = 0)
+                         data = final_train)
 
 stan_1_error <- error(stan_model_1) %>%
   mutate(model = "Multivariate Linear Model")
@@ -57,21 +57,19 @@ tbl_regression(stan_model_2,
 stan_2_error <- error(stan_model_2) %>%
   mutate(model = "Multivariate Linear Model with Interaction Terms")
 
-# Define a simple stan_glm but using the logarithm of GDP per capita. 
+# Define a simple glm but using the logarithm of GDP per capita. 
 
-stan_model_3 <- stan_glm(CPI ~ log_gdp + gini + govt_spending + poverty_rate + bur_rem +
+stan_model_3 <- glm(CPI ~ log_gdp + gini + govt_spending + poverty_rate + bur_rem +
                            pcf + infra_spend + prop_rights - 1, 
-                         data = final_train, 
-                         refresh = 0)
+                         data = final_train)
 
 stan_3_error <- error(stan_model_3) %>%
   mutate(model = "Multivariate Linear Model with Log of GDP")
 
-# Define a stan_glm but with only three variables. 
+# Define a glm but with only three variables. 
 
-simple_stan <- stan_glm(data = final_train, 
-                        CPI ~ gdp_pc + bur_rem + poverty_rate - 1,
-                        refresh = 0)
+simple_stan <- glm(data = final_train, 
+                        CPI ~ gdp_pc + bur_rem + poverty_rate - 1)
 
 stan_4_error <- error(simple_stan) %>%
   mutate(model = "Multivariate Linear Model with 3 Variables")
